@@ -3,8 +3,9 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Search, Filter, Trash2, Edit } from 'lucide-react';
+import { Search, Filter, Trash2, Edit, ArrowLeft } from 'lucide-react';
 import TransactionList from '../../components/TransactionList';
+import { useRouter } from 'next/navigation';
 
 interface Transaction {
   _id: string;
@@ -25,6 +26,7 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'category'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const router = useRouter();
 
   useEffect(() => {
     fetchTransactions();
@@ -146,6 +148,16 @@ export default function TransactionsPage() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Back to Dashboard button for mobile */}
+      <div className="block lg:hidden mb-4">
+        <button
+          onClick={() => router.push('/dashboard')}
+          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 bg-white rounded-lg shadow border border-gray-200 transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Dashboard
+        </button>
+      </div>
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

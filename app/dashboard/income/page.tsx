@@ -34,13 +34,16 @@ export default function AddIncomePage() {
           <PlusCircle className="text-green-600 w-6 h-6" />
           <h1 className="text-2xl font-bold text-gray-800">Add Income</h1>
         </div>
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back
-        </button>
+        {/* Back to Dashboard button for mobile */}
+        <div className="block lg:hidden">
+          <button
+            onClick={() => router.push('/dashboard')}
+            className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-800 bg-white rounded-lg shadow border border-gray-200 transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Dashboard
+          </button>
+        </div>
       </motion.div>
 
       <motion.div
