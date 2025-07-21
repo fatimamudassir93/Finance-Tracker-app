@@ -14,6 +14,7 @@ interface Transaction {
   date: string;
   createdAt: string;
   userId: string;
+  type: 'income' | 'expense';
 }
 
 export default function TransactionsPage() {
