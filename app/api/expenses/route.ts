@@ -69,7 +69,10 @@ export async function POST(req: NextRequest) {
     };
 
     const result = await db.collection("expenses").insertOne(expense);
-    expense._id = result.insertedId;
+    // expense._id = result.insertedId;
+    const expenseWithId = { ...expense, _id: result.insertedId };
+return NextResponse.json(expenseWithId, { status: 201 });
+
 
     return NextResponse.json(expense, { status: 201 });
   } catch (error) {
