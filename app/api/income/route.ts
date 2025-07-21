@@ -3,6 +3,16 @@ import clientPromise from "@/lib/db";
 import jwt from "jsonwebtoken";
 import { ObjectId } from "mongodb";
 
+interface Income {
+  userId: any;
+  amount: number;
+  description: any;
+  category: any;
+  date: any;
+  createdAt: string;
+  _id?: ObjectId; 
+}
+
 // Helper function to verify JWT token
 async function verifyToken(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -67,11 +77,11 @@ export async function POST(req: NextRequest) {
       date: date || new Date().toISOString(),
       createdAt: new Date().toISOString()
     };
+  
 
     const result = await db.collection("income").insertOne(income);
-    income._id = result.insertedId;
-
-    return NextResponse.json(income, { status: 201 });
+    const incomeWithId = { ...income, _id: result.insertedId };
+    return NextResponse.json(incomeWithId, { status: 201 });
   } catch (error) {
     console.error("Error creating income:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
