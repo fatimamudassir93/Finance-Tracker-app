@@ -10,13 +10,23 @@ export default function TestPage() {
     setTestResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
   };
 
-  const testAPI = async (endpoint: string, method: string = 'GET', body?: any) => {
+  const testAPI = async (
+    endpoint: string,
+    method: string = 'GET',
+    body?: any,
+    token?: string
+  ) => {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const options: RequestInit = {
         method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
       };
 
       if (body) {
