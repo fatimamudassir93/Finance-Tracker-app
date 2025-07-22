@@ -4,7 +4,7 @@
 import Link from 'next/link';
 import { Home, List, PlusCircle, DollarSign, LogOut, Menu, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { useAuth } from '@/lib/auth';
 
@@ -19,6 +19,13 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Notify Navbar when sidebar opens/closes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('sidebar-toggle', { detail: isMobileMenuOpen }));
+    }
+  }, [isMobileMenuOpen]);
 
   const handleLogout = () => {
     logout();

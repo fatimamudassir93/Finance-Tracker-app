@@ -19,13 +19,14 @@ export default function HomePage() {
         transition={{ delay: 0.1, duration: 0.5 }}
         className="w-full max-w-4xl mb-8"
       >
-        <Image
-          src="/home.png"
-          alt="Personal Finance Tracker"
-          width={1200}
-          height={600}
-          className="w-full h-auto rounded-lg shadow-lg"
-          priority
+        <video
+          src="/backpage.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="w-full h-auto rounded-lg shadow-lg object-cover"
+          style={{ maxHeight: 400 }}
         />
       </motion.div>
 
