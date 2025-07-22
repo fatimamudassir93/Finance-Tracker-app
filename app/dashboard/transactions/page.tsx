@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import { Search, Filter, Trash2, Edit, ArrowLeft } from 'lucide-react';
 import TransactionList from '../../components/TransactionList';
 import { useRouter } from 'next/navigation';
+import { authFetch } from '../../../lib/auth';
 
 interface Transaction {
   _id: string;
@@ -26,48 +27,56 @@ export default function TransactionsPage() {
   const [filterType, setFilterType] = useState<'all' | 'income' | 'expense'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'amount' | 'category'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_SIZE = 10;
   const router = useRouter();
 
   useEffect(() => {
-    fetchTransactions();
-  }, []);
+    fetchTransactions(page);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
-  const fetchTransactions = async () => {
+  const fetchTransactions = async (pageNum = 1) => {
     try {
+      setLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         setError('Please login to view transactions');
         setLoading(false);
         return;
       }
-
-      // Fetch both income and expenses
+      // Add pagination params to API calls
+      const skip = (pageNum - 1) * PAGE_SIZE;
       const [incomeResponse, expenseResponse] = await Promise.all([
-        fetch('/api/income', {
+        authFetch(`/api/income?skip=${skip}&limit=${PAGE_SIZE}`, {
           headers: { 'Authorization': `Bearer ${token}` }
+        }, () => {
+          localStorage.removeItem('token');
+          router.push('/login');
         }),
-        fetch('/api/expenses', {
+        authFetch(`/api/expenses?skip=${skip}&limit=${PAGE_SIZE}`, {
           headers: { 'Authorization': `Bearer ${token}` }
+        }, () => {
+          localStorage.removeItem('token');
+          router.push('/login');
         })
       ]);
-
       if (!incomeResponse.ok || !expenseResponse.ok) {
         throw new Error('Failed to fetch transactions');
       }
-
       const incomeData = await incomeResponse.json();
       const expenseData = await expenseResponse.json();
-
-      // Combine and mark transaction types
       const allTransactions = [
         ...incomeData.map((t: Transaction) => ({ ...t, type: 'income' })),
         ...expenseData.map((t: Transaction) => ({ ...t, type: 'expense' }))
       ];
-
       setTransactions(allTransactions);
+      setHasMore(allTransactions.length === PAGE_SIZE * 2); // crude check
     } catch (err) {
       setError('Failed to load transactions');
       console.error('Error fetching transactions:', err);
+      setLoading(false);
     } finally {
       setLoading(false);
     }
@@ -79,10 +88,12 @@ export default function TransactionsPage() {
     try {
       const token = localStorage.getItem('token');
       const endpoint = type === 'income' ? '/api/income' : '/api/expenses';
-      
-      const response = await fetch(`${endpoint}?id=${id}`, {
+      const response = await authFetch(`${endpoint}?id=${id}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
+      }, () => {
+        localStorage.removeItem('token');
+        router.push('/login');
       });
 
       if (!response.ok) {
@@ -240,57 +251,76 @@ export default function TransactionsPage() {
             <p className="text-gray-400 text-sm">Try adjusting your search or filters</p>
           </div>
         ) : (
-          <div className="divide-y divide-gray-200">
-            {filteredTransactions.map((transaction) => (
-              <motion.div
-                key={transaction._id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="p-4 hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="font-semibold text-gray-800">
-                        {transaction.description}
-                      </h3>
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        transaction.type === 'income' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {transaction.type}
-                      </span>
+          <>
+            <div className="divide-y divide-gray-200">
+              {filteredTransactions.map((transaction) => (
+                <motion.div
+                  key={transaction._id}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="p-4 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold text-gray-800">
+                          {transaction.description}
+                        </h3>
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          transaction.type === 'income' 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {transaction.type}
+                        </span>
+                      </div>
+                      <p className="text-sm text-gray-500 capitalize">
+                        {transaction.category}
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        {new Date(transaction.date).toLocaleDateString()}
+                      </p>
                     </div>
-                    <p className="text-sm text-gray-500 capitalize">
-                      {transaction.category}
-                    </p>
-                    <p className="text-xs text-gray-400">
-                      {new Date(transaction.date).toLocaleDateString()}
-                    </p>
-                  </div>
-                  
-                  <div className="flex items-center gap-4">
-                    <span className={`font-bold text-lg ${
-                      transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
-                    }`}>
-                      {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
-                    </span>
                     
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleDelete(transaction._id, transaction.type)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Delete transaction"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                    <div className="flex items-center gap-4">
+                      <span className={`font-bold text-lg ${
+                        transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {transaction.type === 'income' ? '+' : '-'}${transaction.amount.toFixed(2)}
+                      </span>
+                      
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDelete(transaction._id, transaction.type)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          title="Delete transaction"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                </motion.div>
+              ))}
+            </div>
+            <div className="flex justify-between items-center p-4 border-t border-gray-200">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 rounded bg-gray-100 text-gray-700 disabled:opacity-50"
+              >
+                Previous
+              </button>
+              <span>Page {page}</span>
+              <button
+                onClick={() => setPage((p) => p + 1)}
+                disabled={!hasMore}
+                className="px-4 py-2 rounded bg-gray-100 text-gray-700 disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          </>
         )}
       </motion.div>
     </div>

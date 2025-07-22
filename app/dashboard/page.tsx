@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import SummaryCard from '../components/SummaryCard';
 import Chart from '../components/Chart';
 import TransactionList from '../components/TransactionList';
+import { authFetch } from '../../lib/auth';
+import { useRouter } from 'next/navigation';
 
 interface Stats {
   currentMonth: {
@@ -27,6 +29,7 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -38,10 +41,13 @@ export default function DashboardPage() {
           return;
         }
 
-        const response = await fetch('/api/stats', {
+        const response = await authFetch('/api/stats', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
+        }, () => {
+          localStorage.removeItem('token');
+          router.push('/login');
         });
 
         if (!response.ok) {
@@ -59,18 +65,31 @@ export default function DashboardPage() {
     };
 
     fetchStats();
-  }, []);
+  }, [router]);
 
   if (loading) {
     return (
       <div className="p-6 space-y-6">
         <div className="animate-pulse">
-          <div className="h-8 bg-gray-200 rounded w-1/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2 mb-6"></div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-6"></div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+              <div key={i} className="h-32 bg-gray-200 dark:bg-gray-800 rounded-2xl shadow-lg border border-white/10 backdrop-blur-md"></div>
             ))}
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-20 bg-gray-200 dark:bg-gray-800 rounded-xl shadow"></div>
+            ))}
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="h-80 bg-gray-200 dark:bg-gray-800 rounded-xl shadow"></div>
+            <div className="h-80 bg-gray-200 dark:bg-gray-800 rounded-xl shadow"></div>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-xl shadow"></div>
+            <div className="h-64 bg-gray-200 dark:bg-gray-800 rounded-xl shadow"></div>
           </div>
         </div>
       </div>

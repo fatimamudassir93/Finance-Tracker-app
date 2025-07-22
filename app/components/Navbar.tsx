@@ -9,6 +9,27 @@ export default function Navbar() {
   const { isAuthenticated, loading, logout } = useAuth();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [theme, setTheme] = useState('light');
+
+  // Load theme from localStorage or system preference
+  useEffect(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) {
+      setTheme(saved);
+      document.documentElement.classList.toggle('dark', saved === 'dark');
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      setTheme('dark');
+      document.documentElement.classList.add('dark');
+    }
+  }, []);
+
+  // Toggle theme
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark';
+    setTheme(newTheme);
+    localStorage.setItem('theme', newTheme);
+    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+  };
 
   // Listen for sidebar open/close events
   useEffect(() => {
@@ -39,12 +60,14 @@ export default function Navbar() {
 
         {/* Navigation Links */}
         <div className="space-x-6 hidden sm:block">
-          <Link
-            href={isAuthenticated ? "/dashboard" : "/"}
-            className="text-gray-200 hover:text-white font-medium transition-colors duration-200"
-          >
-            Home
-          </Link>
+          {!isAuthenticated && (
+            <Link
+              href="/"
+              className="text-gray-200 hover:text-white font-medium transition-colors duration-200"
+            >
+              Home
+            </Link>
+          )}
           {isAuthenticated && (
             <Link
               href="/dashboard"
@@ -55,22 +78,24 @@ export default function Navbar() {
           )}
         </div>
 
-        {/* Auth Button */}
-        {isAuthenticated ? (
-          <button
-            onClick={logout}
-            className="px-4 py-2 bg-white text-indigo-800 font-semibold rounded-md hover:bg-indigo-100 transition-colors duration-300 shadow"
-          >
-            Logout
-          </button>
-        ) : (
-          <Link
-            href="/login"
-            className="px-4 py-2 bg-white text-indigo-800 font-semibold rounded-md hover:bg-indigo-100 transition-colors duration-300 shadow"
-          >
-            Login
-          </Link>
-        )}
+        {/* Right side: Auth Button only (removed theme toggle) */}
+        <div className="flex items-center gap-2">
+          {isAuthenticated ? (
+            <button
+              onClick={logout}
+              className="px-4 py-2 bg-white text-indigo-800 font-semibold rounded-md hover:bg-indigo-100 transition-colors duration-300 shadow"
+            >
+              Logout
+            </button>
+          ) : (
+            <Link
+              href="/login"
+              className="px-4 py-2 bg-white text-indigo-800 font-semibold rounded-md hover:bg-indigo-100 transition-colors duration-300 shadow"
+            >
+              Login
+            </Link>
+          )}
+        </div>
       </div>
     </nav>
   );

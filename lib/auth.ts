@@ -8,11 +8,39 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const router = useRouter();
 
+  // Cross-tab logout sync and token change detection
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    setIsAuthenticated(!!token);
+    let prevToken = localStorage.getItem('token');
+    setIsAuthenticated(!!prevToken);
     setLoading(false);
-  }, []);
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'token') {
+        setIsAuthenticated(!!event.newValue);
+        if (event.newValue === null) {
+          router.push('/login');
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+
+    // Polling fallback for same-tab token changes
+    const interval = setInterval(() => {
+      const currentToken = localStorage.getItem('token');
+      if (currentToken !== prevToken) {
+        setIsAuthenticated(!!currentToken);
+        prevToken = currentToken;
+        if (!currentToken) {
+          router.push('/login');
+        }
+      }
+    }, 500);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      clearInterval(interval);
+    };
+  }, [router]);
 
   const login = (token: string) => {
     localStorage.setItem('token', token);
@@ -49,4 +77,23 @@ export function useProtectedRoute() {
   }, [isAuthenticated, loading, router]);
 
   return { isAuthenticated, loading };
+}
+
+// Helper: fetch wrapper that logs out on 401
+export async function authFetch(input: RequestInfo, init: RequestInit = {}, logoutCallback?: () => void) {
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const headers = {
+    ...(init.headers || {}),
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+  };
+  const response = await fetch(input, { ...init, headers });
+  if (response.status === 401) {
+    if (logoutCallback) logoutCallback();
+    else if (typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    throw new Error('Unauthorized');
+  }
+  return response;
 } 
